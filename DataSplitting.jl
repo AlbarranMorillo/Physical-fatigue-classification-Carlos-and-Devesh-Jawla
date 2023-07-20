@@ -3,20 +3,20 @@ using DataFrames, DelimitedFiles, CSV, Statistics
 PATH = @__DIR__
 cd(PATH)
 
-# df = CSV.read("fatigue_data.csv", DataFrame, header=1)
-# rename!(df, :fatigue => :label)
+df = CSV.read("fatigue_data.csv", DataFrame, header=1)
+rename!(df, :fatigue => :label)
 
-train = CSV.read("train_by_Individual.csv", DataFrame, header=1)
-rename!(train, :fatigue => :label)
-test = CSV.read("test_by_Individual.csv", DataFrame, header=1)
-rename!(test, :fatigue => :label)
+# train = CSV.read("train_by_Individual.csv", DataFrame, header=1)
+# rename!(train, :fatigue => :label)
+# test = CSV.read("test_by_Individual.csv", DataFrame, header=1)
+# rename!(test, :fatigue => :label)
 
 
 # df = select(df, Not(:temperature_celsius))
 # rename!(df, "Gender (0=F 1=M)" => :gender)
 include("DataUtils.jl")
 
-pool, test = pool_test_maker(train, test, 7)
+pool, test = pool_test_maker(df, 1)
 writedlm("pool_x.csv", pool[1], ',')
 writedlm("pool_y.csv", pool[2], ',')
 writedlm("test_x.csv", test[1], ',')

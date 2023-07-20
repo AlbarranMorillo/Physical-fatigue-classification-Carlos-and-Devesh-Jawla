@@ -1,30 +1,5 @@
 using Random
 
-function data_balancing(data_xy::DataFrame; balancing::String, positive_class_label=1, negative_class_label=2)::DataFrame
-    negative_class = data_xy[data_xy[:, end].==negative_class_label, :]
-    positive_class = data_xy[data_xy[:, end].==positive_class_label, :]
-    size_positive_class = size(positive_class)[1]
-    size_normal = size(negative_class)[1]
-    multiplier = div(size_normal, size_positive_class)
-    leftover = mod(size_normal, size_positive_class)
-    if balancing == "undersampling"
-        data_xy = vcat(negative_class[1:size(positive_class)[1], :], positive_class)
-        data_xy = data_xy[shuffle(axes(data_xy, 1)), :]
-    elseif balancing == "generative"
-        new_positive_class = vcat(repeat(positive_class, outer=multiplier - 1), positive_class[1:leftover, :], positive_class)
-        data_x = select(new_positive_class, Not([:label]))
-        data_y = select(new_positive_class, [:label])
-        new_positive_class = mapcols(x -> x + x * rand(collect(-0.05:0.01:0.05)), data_x)
-        new_positive_class = hcat(data_x, data_y)
-        data_xy = vcat(negative_class, new_positive_class)
-        data_xy = data_xy[shuffle(axes(data_xy, 1)), :]
-    elseif balancing == "none"
-        nothing
-    end
-    # data_x = Matrix(data_xy)[:, 1:end-1]
-    # data_y = data_xy.target
-    return data_xy
-end
 
 # A handy helper function to normalize our dataset.
 function standardize(x, mean_, std_)
@@ -91,22 +66,29 @@ end
 
 
 function pool_test_maker(df::DataFrame, n_input::Int)::Tuple{Tuple{Array{Float32, 2}, Array{Int, 2}}, Tuple{Array{Float32, 2}, Array{Int, 2}}}
-	# df = select(df, [:eda_scl_usiemens,:pulse_rate_bpm, :Age, :label])
-	pool, test = split_data(df, at=0.4)
+	df = select(df, [:temperature_celsius, :label])
+	pool, test = split_data(df, at=0.7)
     pool = Matrix{Float32}(permutedims(pool))
     test = Matrix{Float32}(permutedims(test))
     pool_x = pool[1:n_input, :]
     pool_y = pool[end, :]
-	low = findall(pool_y .<=8)
-	med_low = findall(x->  8 < x <= 11, pool_y)
-	med = findall(x->  11 < x <= 14, pool_y)
-	med_high = findall(x->  14 < x <= 17, pool_y)
-	high = findall(pool_y .>17)
+	# low = findall(pool_y .<=8)
+	# med_low = findall(x->  8 < x <= 11, pool_y)
+	# med = findall(x->  11 < x <= 14, pool_y)
+	# med_high = findall(x->  14 < x <= 17, pool_y)
+	# high = findall(pool_y .>17)
+	# pool_y[low] .= 1
+	# pool_y[med_low] .= 2
+	# pool_y[med] .= 3
+	# pool_y[med_high] .= 4
+	# pool_y[high] .= 5
+
+	low = findall(pool_y .<=10)
+	med = findall(x->  10 < x <= 15, pool_y)
+	high = findall(pool_y .>15)
 	pool_y[low] .= 1
-	pool_y[med_low] .= 2
-	pool_y[med] .= 3
-	pool_y[med_high] .= 4
-	pool_y[high] .= 5
+	pool_y[med] .= 2
+	pool_y[high] .= 3
 
     # pool_mean = mean(pool_x, dims=2)
     # pool_std = std(pool_x, dims=2)
@@ -115,16 +97,23 @@ function pool_test_maker(df::DataFrame, n_input::Int)::Tuple{Tuple{Array{Float32
 
     test_x = test[1:n_input, :]
     test_y = test[end, :]
+	# low = findall(test_y .<=10)
+	# med_low = findall(x->  8 < x <= 11, test_y)
+	# med = findall(x->  11 < x <= 14, test_y)
+	# med_high = findall(x->  14 < x <= 17, test_y)
+	# high = findall(test_y .>15)
+	# test_y[low] .= 1
+	# test_y[med_low] .= 2
+	# test_y[med] .= 3
+	# test_y[med_high] .= 4
+	# test_y[high] .= 5
+
 	low = findall(test_y .<=10)
-	med_low = findall(x->  8 < x <= 11, test_y)
-	med = findall(x->  11 < x <= 14, test_y)
-	med_high = findall(x->  14 < x <= 17, test_y)
+	med = findall(x->  10 < x <= 15, test_y)
 	high = findall(test_y .>15)
 	test_y[low] .= 1
-	test_y[med_low] .= 2
-	test_y[med] .= 3
-	test_y[med_high] .= 4
-	test_y[high] .= 5
+	test_y[med] .= 2
+	test_y[high] .= 3
     # test_x = standardize(test_x, pool_mean, pool_std)
 	# test_x = vcat(test_x, permutedims(test[n_input, :]))
 
@@ -143,16 +132,22 @@ function pool_test_maker(pool::DataFrame, test::DataFrame, n_input::Int)::Tuple{
     test = Matrix{Float32}(permutedims(test))
     pool_x = pool[1:n_input, :]
     pool_y = pool[end, :]
-	low = findall(pool_y .<=8)
-	med_low = findall(x->  8 < x <= 11, pool_y)
-	med = findall(x->  11 < x <= 14, pool_y)
-	med_high = findall(x->  14 < x <= 17, pool_y)
-	high = findall(pool_y .>17)
+	# low = findall(pool_y .<=8)
+	# med_low = findall(x->  8 < x <= 11, pool_y)
+	# med = findall(x->  11 < x <= 14, pool_y)
+	# med_high = findall(x->  14 < x <= 17, pool_y)
+	# high = findall(pool_y .>17)
+	# pool_y[low] .= 1
+	# pool_y[med_low] .= 2
+	# pool_y[med] .= 3
+	# pool_y[med_high] .= 4
+	# pool_y[high] .= 5
+	low = findall(pool_y .<=10)
+	med = findall(x->  10 < x <= 15, pool_y)
+	high = findall(pool_y .>15)
 	pool_y[low] .= 1
-	pool_y[med_low] .= 2
-	pool_y[med] .= 3
-	pool_y[med_high] .= 4
-	pool_y[high] .= 5
+	pool_y[med] .= 2
+	pool_y[high] .= 3
 
     # pool_mean = mean(pool_x, dims=2)
     # pool_std = std(pool_x, dims=2)
@@ -161,19 +156,24 @@ function pool_test_maker(pool::DataFrame, test::DataFrame, n_input::Int)::Tuple{
 
     test_x = test[1:n_input, :]
     test_y = test[end, :]
-	low = findall(test_y .<=10)
-	med_low = findall(x->  8 < x <= 11, test_y)
-	med = findall(x->  11 < x <= 14, test_y)
-	med_high = findall(x->  14 < x <= 17, test_y)
-	high = findall(test_y .>15)
-	test_y[low] .= 1
-	test_y[med_low] .= 2
-	test_y[med] .= 3
-	test_y[med_high] .= 4
-	test_y[high] .= 5
+	# low = findall(test_y .<=10)
+	# med_low = findall(x->  8 < x <= 11, test_y)
+	# med = findall(x->  11 < x <= 14, test_y)
+	# med_high = findall(x->  14 < x <= 17, test_y)
+	# high = findall(test_y .>15)
+	# test_y[low] .= 1
+	# test_y[med_low] .= 2
+	# test_y[med] .= 3
+	# test_y[med_high] .= 4
+	# test_y[high] .= 5
     # test_x = standardize(test_x, pool_mean, pool_std)
 	# test_x = vcat(test_x, permutedims(test[n_input, :]))
-
+	low = findall(test_y .<=10)
+	med = findall(x->  10 < x <= 15, test_y)
+	high = findall(test_y .>15)
+	test_y[low] .= 1
+	test_y[med] .= 2
+	test_y[high] .= 3
 
     pool_y = permutedims(pool_y)
     test_y = permutedims(test_y)

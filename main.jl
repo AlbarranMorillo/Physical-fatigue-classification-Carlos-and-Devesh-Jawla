@@ -1,9 +1,9 @@
 # using Distributed
 using XGBoost
 nsteps = 1000
-n_output =5
+n_output =3
 # addprocs(num_chains; exeflags=`--project`)
-experiment_name = "supervised_learning"
+experiment_name = "supervised_learning_3_levels_Temperature"
 using DelimitedFiles, DataFrames, Statistics
 include("DataUtils.jl")
 pool_x = readdlm("pool_x.csv", ',', Float32)
