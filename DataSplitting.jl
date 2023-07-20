@@ -3,63 +3,20 @@ using DataFrames, DelimitedFiles, CSV, Statistics
 PATH = @__DIR__
 cd(PATH)
 
-df = CSV.read("fatigue_data.csv", DataFrame, header=1)
+# df = CSV.read("fatigue_data.csv", DataFrame, header=1)
+# rename!(df, :fatigue => :label)
 
-rename!(df, :fatigue => :label)
+train = CSV.read("train_by_Individual.csv", DataFrame, header=1)
+rename!(train, :fatigue => :label)
+test = CSV.read("test_by_Individual.csv", DataFrame, header=1)
+rename!(test, :fatigue => :label)
 
 
 # df = select(df, Not(:temperature_celsius))
-rename!(df, "Gender (0=F 1=M)" => :gender)
+# rename!(df, "Gender (0=F 1=M)" => :gender)
 include("DataUtils.jl")
 
-function pool_test_maker(df::DataFrame, n_input::Int)::Tuple{Tuple{Array{Float32, 2}, Array{Int, 2}}, Tuple{Array{Float32, 2}, Array{Int, 2}}}
-	# df = select(df, [:eda_scl_usiemens,:pulse_rate_bpm, :Age, :label])
-	pool, test = split_data(df, at=0.4)
-    pool = Matrix{Float32}(permutedims(pool))
-    test = Matrix{Float32}(permutedims(test))
-    pool_x = pool[1:n_input, :]
-    pool_y = pool[end, :]
-	low = findall(pool_y .<=8)
-	med_low = findall(x->  8 < x <= 11, pool_y)
-	med = findall(x->  11 < x <= 14, pool_y)
-	med_high = findall(x->  14 < x <= 17, pool_y)
-	high = findall(pool_y .>17)
-	pool_y[low] .= 1
-	pool_y[med_low] .= 2
-	pool_y[med] .= 3
-	pool_y[med_high] .= 4
-	pool_y[high] .= 5
-
-    # pool_mean = mean(pool_x, dims=2)
-    # pool_std = std(pool_x, dims=2)
-    # pool_x = standardize(pool_x, pool_mean, pool_std)
-	# pool_x = vcat(pool_x, permutedims(pool[n_input, :]))
-
-    test_x = test[1:n_input, :]
-    test_y = test[end, :]
-	low = findall(test_y .<=10)
-	med_low = findall(x->  8 < x <= 11, test_y)
-	med = findall(x->  11 < x <= 14, test_y)
-	med_high = findall(x->  14 < x <= 17, test_y)
-	high = findall(test_y .>15)
-	test_y[low] .= 1
-	test_y[med_low] .= 2
-	test_y[med] .= 3
-	test_y[med_high] .= 4
-	test_y[high] .= 5
-    # test_x = standardize(test_x, pool_mean, pool_std)
-	# test_x = vcat(test_x, permutedims(test[n_input, :]))
-
-
-    pool_y = permutedims(pool_y)
-    test_y = permutedims(test_y)
-	println(size(test_x), size(pool_x))
-    pool = (pool_x, pool_y)
-    test = (test_x, test_y)
-    return pool, test
-end
-
-pool, test = pool_test_maker(df, 7)
+pool, test = pool_test_maker(train, test, 7)
 writedlm("pool_x.csv", pool[1], ',')
 writedlm("pool_y.csv", pool[2], ',')
 writedlm("test_x.csv", test[1], ',')
